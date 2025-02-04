@@ -30,3 +30,27 @@ model Session {
   collaborator  Boolean?  @default(false)
   emailVerified Boolean?  @default(false)
 }
+
+model Order {
+  id              String   @id
+  number          String
+  totalPrice      String
+  paymentGateway  String
+  tags            String
+  shippingAddress String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  Customer   Customer @relation(fields: [customerId], references: [id])
+  customerId String
+}
+
+model Customer {
+  id        String   @id
+  fullName  String
+  email     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+}

@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "9bd9fb86b633d9c84a07e015f8c4fff3"
-application_url = "https://fighting-aims-surrey-qc.trycloudflare.com"
+application_url = "https://martin-wing-armed-kills.trycloudflare.com"
 embedded = true
 name = "app-playground-2"
 handle = "app-playground-8"
@@ -17,15 +17,19 @@ api_version = "2025-01"
   topics = [ "app/scopes_update" ]
   uri = "/webhooks/app/scopes_update"
 
+  [[webhooks.subscriptions]]
+  topics = [ "orders/create", "orders/updated" ]
+  uri = "/webhooks/order"
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products"
+scopes = "write_products,read_orders"
 
 [auth]
 redirect_urls = [
-  "https://fighting-aims-surrey-qc.trycloudflare.com/auth/callback",
-  "https://fighting-aims-surrey-qc.trycloudflare.com/auth/shopify/callback",
-  "https://fighting-aims-surrey-qc.trycloudflare.com/api/auth/callback"
+  "https://martin-wing-armed-kills.trycloudflare.com/auth/callback",
+  "https://martin-wing-armed-kills.trycloudflare.com/auth/shopify/callback",
+  "https://martin-wing-armed-kills.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]
@@ -34,3 +38,4 @@ embedded = false
 [build]
 dev_store_url = "manhstore2.myshopify.com"
 automatically_update_urls_on_dev = true
+include_config_on_deploy = true
