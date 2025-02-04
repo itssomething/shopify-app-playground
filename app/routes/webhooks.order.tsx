@@ -48,9 +48,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       });
     });
     console.log("Transaction completed successfully");
+    return new Response("ok");
   } catch (error) {
     console.error("Transaction failed", error);
     return new Response("Transaction failed", { status: 500 });
   }
-  return new Response("ok");
 };
