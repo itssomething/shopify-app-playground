@@ -16,14 +16,22 @@ import {
   Modal,
 } from "@shopify/polaris";
 import { useFetcher, useLoaderData } from "@remix-run/react";
-import { LoaderFunctionArgs } from "@remix-run/node";
+import { ActionFunctionArgs, LoaderFunctionArgs, json } from "@remix-run/node";
 import db from "../db.server";
 import { authenticate } from "../shopify.server";
 
 interface Customer {
   fullName: string;
 }
-interface Order {
+interface ActionResponse {
+  errors?: Array<{ message: string; field: string }>;
+  order?: {
+    id: string;
+    tags: string;
+  };
+}
+
+interface Order extends Record<string, unknown> {
   id: string;
   number: string;
   createdAt: string;
@@ -33,6 +41,49 @@ interface Order {
   paymentGateway: string;
   Customer: Customer;
 }
+
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const { admin } = await authenticate.admin(request);
+
+  const formData = await request.formData();
+  const orderId = formData.get("orderId") as string;
+  const tags = formData.get("tags") as string;
+
+  const response = await admin.graphql(
+    `
+    mutation UpdateOrder($input: OrderInput!) {
+      orderUpdate(input: $input) {
+        order {
+          id
+          tags
+        }
+        userErrors {
+          message
+          field
+        }
+      }
+    }
+  `,
+    {
+      variables: {
+        input: {
+          id: `gid://shopify/Order/${orderId}`,
+          tags: tags,
+        },
+      },
+    },
+  );
+
+  const {
+    data: { orderUpdate },
+  } = await response.json();
+
+  if (orderUpdate.userErrors?.length > 0) {
+    return Response.json({ errors: orderUpdate.userErrors }, { status: 400 });
+  }
+
+  return Response.json({ order: orderUpdate.order });
+};
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
@@ -53,21 +104,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function SimpleIndexTableExample() {
   const fetcher = useFetcher();
-  const orders = useLoaderData<Order[]>();
+  const loaderData = useLoaderData<Order[]>();
+  const [orders, setOrders] = useState<Order[]>(loaderData);
+
+  // Keep orders in sync with loader data
+  useEffect(() => {
+    setOrders(loaderData);
+  }, [loaderData]);
+
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [savedTags, setSavedTags] = useState<string[]>([]);
-  console.log("savedTags", savedTags);
-
-  console.log("selectedTags", selectedTags);
-
   const [value, setValue] = useState("");
-  console.log("value", value);
   const [suggestion, setSuggestion] = useState("");
 
   const handleRowClick = (order: Order) => {
     setSelectedOrder(order);
+    setValue("");
     setIsModalOpen(true);
   };
 
@@ -81,46 +135,44 @@ export default function SimpleIndexTableExample() {
     }
   }, [selectedOrder]);
 
-  const onSaveClicked = useCallback(async () => {
-    if (!selectedOrder) return;
+  useEffect(() => {
+    const response = fetcher.data as ActionResponse | undefined;
 
-    console.log("save clicked with selected tags", selectedTags);
-    setIsModalOpen(false);
+    if (response) {
+      if (response.errors) {
+        // Keep modal open and show error
+        console.error("Failed to update tags:", response.errors);
+      } else if (response.order) {
+        const { order } = response;
+        if (order && order.id && order.tags) {
+          // Update orders state with new tags
+          // TODO: this is not working
+          const newOrders = orders.map((existingOrder: Order) =>
+            existingOrder.id === order.id
+              ? { ...existingOrder, tags: order.tags }
+              : existingOrder,
+          );
+          console.log('new orders', newOrders)
+          setOrders(newOrders);
 
-    const query = `
-      mutation UpdateOrder($input: OrderInput!) {
-        orderUpdate(input: $input) {
-          order {
-            id
-            tags
-          }
-          userErrors {
-            message
-            field
-          }
+          // Close modal after successful update
+          setIsModalOpen(false);
         }
       }
-    `
+    }
+  }, [fetcher.data]);
 
-    const variables = {
-      input: {
-        id: `gid://shopify/Order/${selectedOrder.id}`,
+  const onSaveClicked = useCallback(() => {
+    if (!selectedOrder) return;
+
+    fetcher.submit(
+      {
+        orderId: selectedOrder.id,
         tags: selectedTags.join(", "),
       },
-    }
-
-    const response = await fetch(
-      `https://${shop}/admin/api/2024-10/graphql.json`,
-      {
-        method: "POST",
-        headers: {
-          "X-Shopify-Access-Token": accessToken,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ query, variables }),
-      },
+      { method: "post" },
     );
-  }, [selectedTags]);
+  }, [selectedOrder, selectedTags, fetcher]);
 
   const handleActiveOptionChange = useCallback(
     (activeOption: string) => {
@@ -264,7 +316,7 @@ export default function SimpleIndexTableExample() {
   };
 
   const { selectedResources, allResourcesSelected, handleSelectionChange } =
-    useIndexResourceState(orders);
+    useIndexResourceState<Order>(orders);
 
   const rowMarkup = orders.map((order, index) => (
     <IndexTable.Row

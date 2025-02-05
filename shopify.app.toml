@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "9bd9fb86b633d9c84a07e015f8c4fff3"
-application_url = "https://meat-laundry-entertainment-shock.trycloudflare.com"
+application_url = "https://bad-billing-publications-these.trycloudflare.com"
 embedded = true
 name = "app-playground-2"
 handle = "app-playground-8"
@@ -23,13 +23,13 @@ api_version = "2025-01"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products,read_orders"
+scopes = "write_products,read_orders,write_orders"
 
 [auth]
 redirect_urls = [
-  "https://meat-laundry-entertainment-shock.trycloudflare.com/auth/callback",
-  "https://meat-laundry-entertainment-shock.trycloudflare.com/auth/shopify/callback",
-  "https://meat-laundry-entertainment-shock.trycloudflare.com/api/auth/callback"
+  "https://bad-billing-publications-these.trycloudflare.com/auth/callback",
+  "https://bad-billing-publications-these.trycloudflare.com/auth/shopify/callback",
+  "https://bad-billing-publications-these.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]
