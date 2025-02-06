@@ -14,7 +14,9 @@ import {
   BlockStack,
   InlineStack,
   Modal,
+  Button,
 } from "@shopify/polaris";
+import Papa from "papaparse";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import { ActionFunctionArgs, LoaderFunctionArgs, json } from "@remix-run/node";
 import db from "../db.server";
@@ -41,6 +43,23 @@ interface Order extends Record<string, unknown> {
   paymentGateway: string;
   Customer: Customer;
 }
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  await authenticate.admin(request);
+
+  const orders = await db.order.findMany({
+    include: {
+      Customer: true,
+    },
+  });
+
+  const formattedOrders = orders.map((order) => ({
+    ...order,
+    createdAt: new Date(order.createdAt).toLocaleString(),
+  }));
+
+  return Response.json(formattedOrders);
+};
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
@@ -83,23 +102,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   return Response.json({ order: orderUpdate.order });
-};
-
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
-
-  const orders = await db.order.findMany({
-    include: {
-      Customer: true,
-    },
-  });
-
-  const formattedOrders = orders.map((order) => ({
-    ...order,
-    createdAt: new Date(order.createdAt).toLocaleString(), // Format the date
-  }));
-
-  return Response.json(formattedOrders);
 };
 
 export default function SimpleIndexTableExample() {
@@ -152,7 +154,7 @@ export default function SimpleIndexTableExample() {
               ? { ...existingOrder, tags: order.tags }
               : existingOrder,
           );
-          console.log('new orders', newOrders)
+          console.log("new orders", newOrders);
           setOrders(newOrders);
 
           // Close modal after successful update
@@ -344,31 +346,63 @@ export default function SimpleIndexTableExample() {
     </IndexTable.Row>
   ));
 
+  const handleDownload = useCallback(() => {
+    // Prepare data for CSV
+    const csvData = orders.map((order) => ({
+      "Order Number": order.number,
+      Date: order.createdAt,
+      Customer: order.Customer.fullName,
+      Total: order.totalPrice,
+      "Shipping Address": order.shippingAddress,
+      Tags: order.tags,
+      "Payment Gateway": order.paymentGateway,
+    }));
+
+    // Convert to CSV
+    const csv = Papa.unparse(csvData);
+
+    // Create blob and download
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "orders.csv");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [orders]);
+
   return (
     <Page fullWidth>
       <Layout>
         <Layout.Section>
-          <Card>
-            <IndexTable
-              resourceName={resourceName}
-              itemCount={orders.length}
-              selectedItemsCount={
-                allResourcesSelected ? "All" : selectedResources.length
-              }
-              onSelectionChange={handleSelectionChange}
-              headings={[
-                { title: "Order" },
-                { title: "Date" },
-                { title: "Customer" },
-                { title: "Total", alignment: "end" },
-                { title: "Shipping Address" },
-                { title: "Tags" },
-                { title: "Payment Gateway" },
-              ]}
-            >
-              {rowMarkup}
-            </IndexTable>
-          </Card>
+          <BlockStack gap="400">
+            <InlineStack align="end">
+              <Button onClick={handleDownload}>Download Orders</Button>
+            </InlineStack>
+            <Card>
+              <IndexTable
+                resourceName={resourceName}
+                itemCount={orders.length}
+                selectedItemsCount={
+                  allResourcesSelected ? "All" : selectedResources.length
+                }
+                onSelectionChange={handleSelectionChange}
+                headings={[
+                  { title: "Order" },
+                  { title: "Date" },
+                  { title: "Customer" },
+                  { title: "Total", alignment: "end" },
+                  { title: "Shipping Address" },
+                  { title: "Tags" },
+                  { title: "Payment Gateway" },
+                ]}
+              >
+                {rowMarkup}
+              </IndexTable>
+            </Card>
+          </BlockStack>
         </Layout.Section>
       </Layout>
 
