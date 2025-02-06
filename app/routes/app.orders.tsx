@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { parseGid } from "../utils/gid";
 import {
   IndexTable,
   Card,
@@ -16,7 +17,7 @@ import {
   Modal,
   Button,
 } from "@shopify/polaris";
-import Papa from "papaparse";
+import { csvService } from "../services/csv.service";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import { ActionFunctionArgs, LoaderFunctionArgs, json } from "@remix-run/node";
 import db from "../db.server";
@@ -29,7 +30,7 @@ interface ActionResponse {
   errors?: Array<{ message: string; field: string }>;
   order?: {
     id: string;
-    tags: string;
+    tags: string[];
   };
 }
 
@@ -108,12 +109,6 @@ export default function SimpleIndexTableExample() {
   const fetcher = useFetcher();
   const loaderData = useLoaderData<Order[]>();
   const [orders, setOrders] = useState<Order[]>(loaderData);
-
-  // Keep orders in sync with loader data
-  useEffect(() => {
-    setOrders(loaderData);
-  }, [loaderData]);
-
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -147,14 +142,17 @@ export default function SimpleIndexTableExample() {
       } else if (response.order) {
         const { order } = response;
         if (order && order.id && order.tags) {
-          // Update orders state with new tags
-          // TODO: this is not working
-          const newOrders = orders.map((existingOrder: Order) =>
-            existingOrder.id === order.id
-              ? { ...existingOrder, tags: order.tags }
-              : existingOrder,
-          );
-          console.log("new orders", newOrders);
+          const { id: parsedId } = parseGid(order.id);
+
+          const newOrders = orders.map((existingOrder) => {
+            if (existingOrder.id === parsedId) {
+              const newData = { ...existingOrder, tags: order.tags.join(", ") };
+
+              return newData;
+            }
+            return existingOrder;
+          });
+
           setOrders(newOrders);
 
           // Close modal after successful update
@@ -188,6 +186,7 @@ export default function SimpleIndexTableExample() {
     },
     [value, selectedTags],
   );
+
   const updateSelection = useCallback(
     (selected: string) => {
       const nextSelectedTags = new Set([...selectedTags]);
@@ -347,7 +346,6 @@ export default function SimpleIndexTableExample() {
   ));
 
   const handleDownload = useCallback(() => {
-    // Prepare data for CSV
     const csvData = orders.map((order) => ({
       "Order Number": order.number,
       Date: order.createdAt,
@@ -358,19 +356,7 @@ export default function SimpleIndexTableExample() {
       "Payment Gateway": order.paymentGateway,
     }));
 
-    // Convert to CSV
-    const csv = Papa.unparse(csvData);
-
-    // Create blob and download
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "orders.csv");
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    csvService.downloadAsCSV(csvData, "orders.csv");
   }, [orders]);
 
   return (
