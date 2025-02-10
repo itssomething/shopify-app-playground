@@ -46,7 +46,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   return Response.json({ order: result.order });
 };
 
-export default function SimpleIndexTableExample() {
+export default function OrdersList() {
   const fetcher = useFetcher();
   const loaderData = useLoaderData<Order[]>();
   const [orders, setOrders] = useState<Order[]>(loaderData);
