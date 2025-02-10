@@ -1,0 +1,9 @@
+Order ID,Order Number,Total Price,Payment Gateway,Customer Email,Customer Full Name,Customer Address,Created At,Tags
+5996622676137,1027,100,manual,ayumu.hirano@example.com,Ayumu Hirano,"Hanoi, Vietnam","2/4/2025, 10:17:17 AM","a, b, c, d, e, f, g, h, i"
+5996624543913,1028,100,manual,ayumu.hirano@example.com,Ayumu Hirano,"Hanoi, Vietnam","2/4/2025, 10:19:27 AM","a, here, new"
+5996625756329,1029,100,manual,ayumu.hirano@example.com,Ayumu Hirano,"Hanoi, Vietnam","2/4/2025, 10:20:44 AM","3333, 444"
+5996627853481,1030,100,manual,ayumu.hirano@example.com,Ayumu Hirano,"Hanoi, Vietnam","2/4/2025, 10:24:03 AM","33, 55, 66, 77"
+5996639715497,1031,100,manual,ayumu.hirano@example.com,Ayumu Hirano,"Hanoi, Vietnam","2/4/2025, 10:38:13 AM","222, 333, 444, 555, 666"
+5996640010409,1032,100,bogus,ayumu.hirano@example.com,Ayumu Hirano,"Hanoi, Vietnam","2/4/2025, 10:38:28 AM","123, 456, 789, 999"
+5995680268457,1014,770,bogus,ayumu.hirano@example.com,Ayumu Hirano,"Hanoi, Vietnam","2/4/2025, 10:39:42 AM","123, 456, 4576, he, qqq"
+6005799682217,1034,185,manual,ayumu.hirano@example.com,Ayumu Hirano,"Hanoi, Vietnam","2/10/2025, 5:45:45 PM",av

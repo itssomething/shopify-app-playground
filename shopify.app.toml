@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "9bd9fb86b633d9c84a07e015f8c4fff3"
-application_url = "https://cameroon-calls-finished-organisations.trycloudflare.com"
+application_url = "https://min-civilization-literally-ball.trycloudflare.com"
 embedded = true
 name = "app-playground-2"
 handle = "app-playground-8"
@@ -27,9 +27,9 @@ scopes = "write_products,read_orders,write_orders"
 
 [auth]
 redirect_urls = [
-  "https://cameroon-calls-finished-organisations.trycloudflare.com/auth/callback",
-  "https://cameroon-calls-finished-organisations.trycloudflare.com/auth/shopify/callback",
-  "https://cameroon-calls-finished-organisations.trycloudflare.com/api/auth/callback"
+  "https://min-civilization-literally-ball.trycloudflare.com/auth/callback",
+  "https://min-civilization-literally-ball.trycloudflare.com/auth/shopify/callback",
+  "https://min-civilization-literally-ball.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]
