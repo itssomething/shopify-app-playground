@@ -17,92 +17,33 @@ import {
   Modal,
   Button,
 } from "@shopify/polaris";
-import { csvService } from "../services/csv.service";
+import { CsvService } from "../services/csv.service";
 import { useFetcher, useLoaderData } from "@remix-run/react";
-import { ActionFunctionArgs, LoaderFunctionArgs, json } from "@remix-run/node";
-import db from "../db.server";
+import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
-
-interface Customer {
-  fullName: string;
-}
-interface ActionResponse {
-  errors?: Array<{ message: string; field: string }>;
-  order?: {
-    id: string;
-    tags: string[];
-  };
-}
-
-interface Order extends Record<string, unknown> {
-  id: string;
-  number: string;
-  createdAt: string;
-  totalPrice: number;
-  shippingAddress: string;
-  tags: string;
-  paymentGateway: string;
-  Customer: Customer;
-}
+import { ActionResponse, Order } from "../types/order.types";
+import { OrderServer } from "../services/order.server";
+import { OrderUtils } from "../services/order.utils";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
-
-  const orders = await db.order.findMany({
-    include: {
-      Customer: true,
-    },
-  });
-
-  const formattedOrders = orders.map((order) => ({
-    ...order,
-    createdAt: new Date(order.createdAt).toLocaleString(),
-  }));
-
-  return Response.json(formattedOrders);
+  const orders = await OrderServer.getAllOrders();
+  return Response.json(orders);
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
-
   const formData = await request.formData();
   const orderId = formData.get("orderId") as string;
   const tags = formData.get("tags") as string;
 
-  const response = await admin.graphql(
-    `
-    mutation UpdateOrder($input: OrderInput!) {
-      orderUpdate(input: $input) {
-        order {
-          id
-          tags
-        }
-        userErrors {
-          message
-          field
-        }
-      }
-    }
-  `,
-    {
-      variables: {
-        input: {
-          id: `gid://shopify/Order/${orderId}`,
-          tags: tags,
-        },
-      },
-    },
-  );
+  const result = await OrderServer.updateOrderTags(admin, orderId, tags);
 
-  const {
-    data: { orderUpdate },
-  } = await response.json();
-
-  if (orderUpdate.userErrors?.length > 0) {
-    return Response.json({ errors: orderUpdate.userErrors }, { status: 400 });
+  if (result.errors) {
+    return Response.json({ errors: result.errors }, { status: 400 });
   }
 
-  return Response.json({ order: orderUpdate.order });
+  return Response.json({ order: result.order });
 };
 
 export default function SimpleIndexTableExample() {
@@ -124,8 +65,9 @@ export default function SimpleIndexTableExample() {
 
   useEffect(() => {
     if (selectedOrder && selectedOrder.tags) {
-      setSavedTags(selectedOrder.tags.split(", "));
-      setSelectedTags(selectedOrder.tags.split(", "));
+      const tags = OrderUtils.splitTagString(selectedOrder.tags);
+      setSavedTags(tags);
+      setSelectedTags(tags);
     } else {
       setSavedTags([]);
       setSelectedTags([]);
@@ -137,7 +79,6 @@ export default function SimpleIndexTableExample() {
 
     if (response) {
       if (response.errors) {
-        // Keep modal open and show error
         console.error("Failed to update tags:", response.errors);
       } else if (response.order) {
         const { order } = response;
@@ -146,16 +87,15 @@ export default function SimpleIndexTableExample() {
 
           const newOrders = orders.map((existingOrder) => {
             if (existingOrder.id === parsedId) {
-              const newData = { ...existingOrder, tags: order.tags.join(", ") };
-
-              return newData;
+              return {
+                ...existingOrder,
+                tags: OrderUtils.joinTags(order.tags),
+              };
             }
             return existingOrder;
           });
 
           setOrders(newOrders);
-
-          // Close modal after successful update
           setIsModalOpen(false);
         }
       }
@@ -168,7 +108,7 @@ export default function SimpleIndexTableExample() {
     fetcher.submit(
       {
         orderId: selectedOrder.id,
-        tags: selectedTags.join(", "),
+        tags: OrderUtils.joinTags(selectedTags),
       },
       { method: "post" },
     );
@@ -211,8 +151,8 @@ export default function SimpleIndexTableExample() {
   );
 
   const getAllTags = useCallback(() => {
-    return [...new Set([...savedTags, ...selectedTags].sort())];
-  }, [selectedTags]);
+    return OrderUtils.getUniqueSortedTags([...savedTags, ...selectedTags]);
+  }, [savedTags, selectedTags]);
 
   const formatOptionText = useCallback(
     (option: string) => {
@@ -238,24 +178,9 @@ export default function SimpleIndexTableExample() {
     [value],
   );
 
-  const escapeSpecialRegExCharacters = useCallback(
-    (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-    [],
-  );
-
   const options = useMemo(() => {
-    let list;
-    const allTags = getAllTags();
-    const filterRegex = new RegExp(escapeSpecialRegExCharacters(value), "i");
-
-    if (value) {
-      list = allTags.filter((tag) => tag.match(filterRegex));
-    } else {
-      list = allTags;
-    }
-
-    return [...list];
-  }, [value, getAllTags, escapeSpecialRegExCharacters]);
+    return OrderUtils.formatTagOptions(value, getAllTags());
+  }, [value, getAllTags]);
 
   const verticalContentMarkup =
     selectedTags.length > 0 ? (
@@ -356,7 +281,7 @@ export default function SimpleIndexTableExample() {
       "Payment Gateway": order.paymentGateway,
     }));
 
-    csvService.downloadAsCSV(csvData, "orders.csv");
+    CsvService.downloadAsCSV(csvData, "orders.csv");
   }, [orders]);
 
   return (

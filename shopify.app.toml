@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "9bd9fb86b633d9c84a07e015f8c4fff3"
-application_url = "https://resident-perfect-circuits-chess.trycloudflare.com"
+application_url = "https://fall-matched-pr-garlic.trycloudflare.com"
 embedded = true
 name = "app-playground-2"
 handle = "app-playground-8"
@@ -27,9 +27,9 @@ scopes = "write_products,read_orders,write_orders"
 
 [auth]
 redirect_urls = [
-  "https://resident-perfect-circuits-chess.trycloudflare.com/auth/callback",
-  "https://resident-perfect-circuits-chess.trycloudflare.com/auth/shopify/callback",
-  "https://resident-perfect-circuits-chess.trycloudflare.com/api/auth/callback"
+  "https://fall-matched-pr-garlic.trycloudflare.com/auth/callback",
+  "https://fall-matched-pr-garlic.trycloudflare.com/auth/shopify/callback",
+  "https://fall-matched-pr-garlic.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]
