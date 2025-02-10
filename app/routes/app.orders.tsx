@@ -272,13 +272,15 @@ export default function SimpleIndexTableExample() {
 
   const handleDownload = useCallback(() => {
     const csvData = orders.map((order) => ({
+      "Order ID": order.id,
       "Order Number": order.number,
-      Date: order.createdAt,
-      Customer: order.Customer.fullName,
-      Total: order.totalPrice,
-      "Shipping Address": order.shippingAddress,
-      Tags: order.tags,
+      "Total Price": order.totalPrice,
       "Payment Gateway": order.paymentGateway,
+      "Customer Email": order.Customer.email,
+      "Customer Full Name": order.Customer.fullName,
+      "Customer Address": order.shippingAddress,
+      "Created At": order.createdAt,
+      Tags: order.tags,
     }));
 
     CsvService.downloadAsCSV(csvData, "orders.csv");
